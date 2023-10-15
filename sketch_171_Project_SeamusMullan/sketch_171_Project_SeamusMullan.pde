@@ -19,11 +19,32 @@ import com.krab.lazy.*;
 LazyGui gui;
 //Sound s;
 
+SoundFile[] windSamples;
+SoundFile[] birdSamples;
+SoundFile[] leavesSamples;
+SoundFile[] rainSamples;
+
 float masterGain;
 float windGain, birdGain, leavesGain, rainGain;
 
+Waveform waveform;
+
 boolean lowPassToggle, reverbToggle;
 float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to scale the reverb with one parameter
+
+
+void fetchSamples()
+{
+  File[] localAudioFiles;
+  
+  for (SoundFile file: localAudioFiles)
+  {
+    windSamples.put(
+      (file
+    );
+  }
+}
+
 
 public void setup() {
   size(800, 800, P2D);
