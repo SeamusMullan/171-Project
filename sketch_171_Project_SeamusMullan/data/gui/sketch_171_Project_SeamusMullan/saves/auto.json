@@ -799,6 +799,11 @@
           "className": "FolderNode",
           "path": "saves/autosave rules",
           "type": "FOLDER"
+        },
+        {
+          "className": "SaveItemNode",
+          "path": "saves/auto",
+          "type": "TRANSIENT"
         }
       ],
       "className": "SaveFolderNode",
