@@ -1,4 +1,4 @@
-//<>// //<>// //<>//
+//<>// //<>// //<>// //<>//
 /*
  *
  *    ... . .- -- ..- ...            -- ..- .-.. .-.. .- -.
@@ -10,7 +10,6 @@
  *    Created in 2023 by Seamus Mullan.
  */
 
-
 import processing.sound.*;
 import com.krab.lazy.*;
 import java.io.File;
@@ -18,7 +17,6 @@ import java.io.File;
 // Create UI and Audio I/O + parameters
 LazyGui gui;
 Sound s;
-
 
 // I'm using an arraylist so more samples can be added in the future (it makes the whole program customizable too!
 ArrayList<SoundFile> windSamples = new ArrayList<SoundFile>();
@@ -41,9 +39,10 @@ float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to s
 Waveform waveform;
 
 
+int samples = 2048*64;
 
 public void setup() {
-  size(800, 800, P2D);
+  size(500, 500, P2D);
   background(140, 180, 140);
 
   // Initialize UI Controls and Parameters
@@ -54,7 +53,11 @@ public void setup() {
 
   // Specific Gains for each section of ambience
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
-  bgGain = gui.slider("Bg_gain", 50.0f, 0.0f, 100.0f);
+  bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
+
+
+  waveform = new processing.sound.Waveform(this, samples);
+
 
 
   fetchSamples();
@@ -65,7 +68,7 @@ public void setup() {
 void updateParameters() {
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
-  bgGain = gui.slider("Bg_gain", 50.0f, 0.0f, 100.0f);
+  bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
 }
 
 
@@ -172,18 +175,24 @@ void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
 }
 
 
+
+
 // mostly used for bird samples, rest are bg elements
 void playRandomSample(ArrayList<SoundFile> sampleList, float amp) {
   if (sampleList.size() > 0) {
     // Select a random sample from the list
     int randomIndex = int(random(sampleList.size()));
     SoundFile randomSample = sampleList.get(randomIndex);
+    SoundFile[] birdSamplesArray = birdSamples.toArray(new SoundFile[birdSamples.size()]);
 
     // Check if the selected sample is different from the last one played
     if (randomSample != lastSamplePlayed) {
       // Play the selected sample
       randomSample.play(1, amp);
       playingBirdSounds.add(randomSample);
+
+
+      waveform.input(birdSamplesArray[randomIndex]);
 
       // Set the last played sample to the current sample
       lastSamplePlayed = randomSample;
@@ -203,7 +212,7 @@ public void draw() {
   birdGain += 0.000001f;
   bgGain += 0.000001f;
 
-  float chanceOfBirdNoise = 0.03f;
+  float chanceOfBirdNoise = 0.003f;
   float randInt = random(0, 1);
   if (randInt <= chanceOfBirdNoise)
   {
@@ -213,11 +222,27 @@ public void draw() {
   for (SoundFile birdSound : playingBirdSounds) {
     birdSound.amp(birdGain / 100);
   }
-  
+
   for (SoundFile sound : currentBackgroundSounds) {
     sound.amp(bgGain / 100);
   }
 
   // Set the output gain for all sounds
   s.volume(masterGain/100);
+
+  waveform.analyze();
+
+  stroke(100, 140, 100);
+  strokeWeight(2);
+  noFill();
+
+  beginShape();
+  for (int i = 0; i < samples; i++)
+  {
+    vertex(
+      map(i, 0, samples, 0, width),
+      map(waveform.data[i], -1, 1, 0, height)
+      );
+  }
+  endShape();
 }

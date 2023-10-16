@@ -806,12 +806,18 @@
           "type": "TRANSIENT"
         }
       ],
+      "window": {
+        "posX": 242.0,
+        "posY": 0.0,
+        "closed": false,
+        "windowSizeX": 198.0
+      },
       "className": "SaveFolderNode",
       "path": "saves",
       "type": "FOLDER"
     },
     {
-      "valueFloat": 75.0,
+      "valueFloat": 64.0,
       "currentPrecisionIndex": 4,
       "valueFloatPrecision": 1.0,
       "className": "SliderNode",
@@ -819,15 +825,7 @@
       "type": "VALUE"
     },
     {
-      "valueFloat": 50.0,
-      "currentPrecisionIndex": 4,
-      "valueFloatPrecision": 1.0,
-      "className": "SliderNode",
-      "path": "Wind_gain",
-      "type": "VALUE"
-    },
-    {
-      "valueFloat": 77.0,
+      "valueFloat": 29.0,
       "currentPrecisionIndex": 4,
       "valueFloatPrecision": 1.0,
       "className": "SliderNode",
@@ -835,19 +833,11 @@
       "type": "VALUE"
     },
     {
-      "valueFloat": 60.0,
+      "valueFloat": 39.0,
       "currentPrecisionIndex": 4,
       "valueFloatPrecision": 1.0,
       "className": "SliderNode",
-      "path": "Leaves_gain",
-      "type": "VALUE"
-    },
-    {
-      "valueFloat": 58.0,
-      "currentPrecisionIndex": 4,
-      "valueFloatPrecision": 1.0,
-      "className": "SliderNode",
-      "path": "Rain_gain",
+      "path": "Wind_Rain_gain",
       "type": "VALUE"
     }
   ],
