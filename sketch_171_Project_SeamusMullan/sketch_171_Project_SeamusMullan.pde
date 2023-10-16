@@ -1,4 +1,4 @@
- //<>//
+ //<>// //<>// //<>// //<>// //<>//
 
 /*
  *
@@ -59,6 +59,7 @@ public void setup() {
   fetchSamples();
 }
 
+
 void updateParameters() {
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
   windGain = gui.slider("Wind_gain", 50.0f, 0.0f, 100.0f);
@@ -68,15 +69,16 @@ void updateParameters() {
 }
 
 
+
 /* 
 
-I'm well aware this system isn't that optimised, but since it's only called once on startup, it's not a huge perfomance hit and doesn't affect the program in runtime 
+I'm well aware this system below isn't that optimised, but since it's only called once on startup, it's not a huge perfomance hit and doesn't affect the program in runtime whatsoever
 
 */
 
-
-// This function counts the amount of files in each dedicated sample folder so users can add extra and the values get recalculated!
-int sampleCounter(int dirInt) {
+// This function gets the files in each dedicated sample folder so users can add extra and the values get recalculated!
+// This is hard coded because simplicity :)
+File[] sampleCounter(int dirInt) {
   String[] sDir = {"bird_samples", "wind_samples", "leaves_samples", "rain_samples"}; // list of known sample folders relative to the sketch
 
   String directoryPath = dataPath(sDir[dirInt]);
@@ -86,53 +88,49 @@ int sampleCounter(int dirInt) {
   if (files != null) {
     int numberOfFiles = files.length;
     println("Number of files in the directory '" + sDir[dirInt] + "': " + numberOfFiles);
-    return numberOfFiles;
+    return files;
   } else {
     println("Directory '" + sDir[dirInt] + "' not found or empty.");
-    return 0;
+    return files;
   }
 }
 
 
 // This gets all the samples from each folder and adds them to their corresponding arraylist (defined at start)
 void fetchSamples() {
-  String windFolder = "wind_samples"; //1
-  String birdFolder = "bird_samples"; //0
-  String leavesFolder = "leaves_samples"; //2
-  String rainFolder = "rain_samples"; //3
+  //String windFolder = "wind_samples"; //1
+  //String birdFolder = "bird_samples"; //0
+  //String leavesFolder = "leaves_samples"; //2
+  //String rainFolder = "rain_samples"; //3
 
+  // for loops make repeated calls, this sets the value once
+  File[] birdFiles = sampleCounter(0);
+  File[] windFiles = sampleCounter(1);
+  File[] leavesFiles = sampleCounter(2);
+  File[] rainFiles = sampleCounter(3);
+
+  int birdLim = birdFiles.length;
+  int windLim = windFiles.length;
+  int leavesLim = leavesFiles.length;
+  int rainLim = rainFiles.length;
 
   // BIRDS
-  for (int i = 1; i <= sampleCounter(0); i++) {
-    // Format i so it reads 01 -> 09, This is because I splitted my files in Audacity after rendering them in my DAW (Digital Audio Workstation)
-    // %02d -> default to zeros, 2 digits long, assume an integer for input
-    String j = String.format("%02d", i);
-
-    birdSamples.add(new SoundFile(this, dataPath(birdFolder + "/bird" + j + ".mp3")));
+  for (int i = 0; i < birdLim ; i++) {
+    birdSamples.add(new SoundFile(this, birdFiles[i].toString()));
   }
-
 
   // WIND
-  for (int i = 1; i <= sampleCounter(1); i++) {
-    String j = String.format("%02d", i);
-
-    windSamples.add(new SoundFile(this, dataPath(windFolder + "/wind" + j + ".mp3")));
+  for (int i = 0; i < windLim; i++) {
+    windSamples.add(new SoundFile(this, windFiles[i].toString()));
   }
-
 
   // LEAVES
-  for (int i = 1; i <= sampleCounter(2); i++) {
-    String j = String.format("%02d", i);
-
-    leavesSamples.add(new SoundFile(this, dataPath(leavesFolder + "/leaves" + j + ".mp3")));
+  for (int i = 0; i < leavesLim; i++) {
+    leavesSamples.add(new SoundFile(this, leavesFiles[i].toString()));
   }
-
-
   // RAIN
-  for (int i = 1; i <= sampleCounter(3); i++) {
-    String j = String.format("%02d", i);
-
-    rainSamples.add(new SoundFile(this, dataPath(rainFolder + "/rain" + j + ".mp3")));
+  for (int i = 0; i < rainLim; i++) {
+    rainSamples.add(new SoundFile(this, rainFiles[i].toString()));
   }
 }
 
