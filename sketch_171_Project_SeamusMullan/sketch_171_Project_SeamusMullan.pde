@@ -1,5 +1,4 @@
- //<>// //<>// //<>// //<>// //<>//
-
+//<>// //<>// //<>//
 /*
  *
  *    ... . .- -- ..- ...            -- ..- .-.. .-.. .- -.
@@ -18,7 +17,7 @@ import java.io.File;
 
 // Create UI and Audio I/O + parameters
 LazyGui gui;
-//Sound s;
+Sound s;
 
 
 // I'm using an arraylist so more samples can be added in the future (it makes the whole program customizable too!
@@ -27,9 +26,13 @@ ArrayList<SoundFile> birdSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> leavesSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> rainSamples = new ArrayList<SoundFile>();
 
+ArrayList<SoundFile> currentBackgroundSounds = new ArrayList<SoundFile>();
+ArrayList<SoundFile> backgroundSounds = new ArrayList<SoundFile>();
+ArrayList<SoundFile> playingBirdSounds = new ArrayList<SoundFile>();
+
 // Audio parameters
 float masterGain;
-float windGain, birdGain, leavesGain, rainGain;
+float birdGain, bgGain;
 
 boolean lowPassToggle, reverbToggle;
 float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to scale the reverb with one parameter
@@ -45,36 +48,33 @@ public void setup() {
 
   // Initialize UI Controls and Parameters
   gui = new LazyGui(this);
-  //s = new Sound(this);
+  s = new Sound(this);
 
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f); // Gain from 0% -> 100% on the output
 
   // Specific Gains for each section of ambience
-  windGain = gui.slider("Wind_gain", 50.0f, 0.0f, 100.0f);
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
-  leavesGain = gui.slider("Leaves_gain", 50.0f, 0.0f, 100.0f);
-  rainGain = gui.slider("Rain_gain", 50.0f, 0.0f, 100.0f);
+  bgGain = gui.slider("Bg_gain", 50.0f, 0.0f, 100.0f);
 
 
   fetchSamples();
+  playBackgroundSound(backgroundSounds);
 }
 
 
 void updateParameters() {
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
-  windGain = gui.slider("Wind_gain", 50.0f, 0.0f, 100.0f);
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
-  leavesGain = gui.slider("Leaves_gain", 50.0f, 0.0f, 100.0f);
-  rainGain = gui.slider("Rain_gain", 50.0f, 0.0f, 100.0f);
+  bgGain = gui.slider("Bg_gain", 50.0f, 0.0f, 100.0f);
 }
 
 
 
-/* 
-
-I'm well aware this system below isn't that optimised, but since it's only called once on startup, it's not a huge perfomance hit and doesn't affect the program in runtime whatsoever
-
-*/
+/*
+ 
+ I'm well aware this system below isn't that optimised, but since it's only called once on startup, it's not a huge perfomance hit and doesn't affect the program in runtime whatsoever
+ 
+ */
 
 // This function gets the files in each dedicated sample folder so users can add extra and the values get recalculated!
 // This is hard coded because simplicity :)
@@ -115,7 +115,7 @@ void fetchSamples() {
   int rainLim = rainFiles.length;
 
   // BIRDS
-  for (int i = 0; i < birdLim ; i++) {
+  for (int i = 0; i < birdLim; i++) {
     birdSamples.add(new SoundFile(this, birdFiles[i].toString()));
   }
 
@@ -132,15 +132,92 @@ void fetchSamples() {
   for (int i = 0; i < rainLim; i++) {
     rainSamples.add(new SoundFile(this, rainFiles[i].toString()));
   }
+
+  //currentBackgroundSounds.addAll(windSamples);
+  //currentBackgroundSounds.addAll(leavesSamples);
+  backgroundSounds.addAll(rainSamples);
 }
+
+
+
+/// PLAYING AUDIO ///
+SoundFile lastSamplePlayed;
+
+
+void playOneShot(SoundFile sample) {
+  if (sample != null) {
+    sample.play();
+  }
+}
+
+void playLoopingBG(SoundFile sample) {
+  if (sample != null) {
+    sample.loop();
+  }
+}
+
+// gets called on setup to start the wind, rain and leaves sounds (leaves blowing in the wind is called psithurism by the way!)
+void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
+  // Stop any previously playing background sounds
+  for (SoundFile sound : currentBackgroundSounds) {
+    sound.stop();
+  }
+  currentBackgroundSounds.clear();
+
+  // Select and play multiple background sounds
+  for (SoundFile sound : backgroundSounds) {
+    sound.loop();
+    currentBackgroundSounds.add(sound);
+  }
+}
+
+
+// mostly used for bird samples, rest are bg elements
+void playRandomSample(ArrayList<SoundFile> sampleList, float amp) {
+  if (sampleList.size() > 0) {
+    // Select a random sample from the list
+    int randomIndex = int(random(sampleList.size()));
+    SoundFile randomSample = sampleList.get(randomIndex);
+
+    // Check if the selected sample is different from the last one played
+    if (randomSample != lastSamplePlayed) {
+      // Play the selected sample
+      randomSample.play(1, amp);
+      playingBirdSounds.add(randomSample);
+
+      // Set the last played sample to the current sample
+      lastSamplePlayed = randomSample;
+    }
+  }
+}
+
 
 
 public void draw() {
   // Update all the parameters relevant to sliders
-  //4D 61 64 65  42 79  53 65 61 6D 75 73  4D 75 6C 6C 61 6E (ASCII Hexadecimal)
+  // 4D 61 64 65  42 79  53 65 61 6D 75 73  4D 75 6C 6C 61 6E (ASCII Hexadecimal)
   updateParameters();
   background(140, 180, 140);
 
+  // these stop the console being spammed with messages about inaudible sounds (since the volume can be 0
+  birdGain += 0.000001f;
+  bgGain += 0.000001f;
+
+  float chanceOfBirdNoise = 0.03f;
+  float randInt = random(0, 1);
+  if (randInt <= chanceOfBirdNoise)
+  {
+    playRandomSample(birdSamples, birdGain/100);
+  }
+
+  for (SoundFile birdSound : playingBirdSounds) {
+    birdSound.amp(birdGain / 100);
+  }
+  
+  for (SoundFile sound : currentBackgroundSounds) {
+    sound.amp(bgGain / 100);
+  }
+
   // Set the output gain for all sounds
-  //s.volume(masterGain/100);
+  s.volume(masterGain/100);
 }
