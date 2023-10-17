@@ -36,7 +36,8 @@ boolean lowPassToggle, reverbToggle;
 float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to scale the reverb with one parameter
 
 // Vislualizer Stuff
-Waveform waveform;
+Waveform birdWaveform;
+ArrayList<Waveform> windWaveformsAL = new ArrayList<Waveform>();
 
 
 int samples = 2048*64;
@@ -56,7 +57,12 @@ public void setup() {
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
 
 
-  waveform = new processing.sound.Waveform(this, samples);
+  birdWaveform = new processing.sound.Waveform(this, samples);
+  
+  for (int i = 0; i < windSamples.size(); i++) {
+    Waveform windWaveform = new Waveform(this, samples);
+    windWaveformsAL.add(windWaveform);
+  }
 
 
 
@@ -166,11 +172,23 @@ void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
     sound.stop();
   }
   currentBackgroundSounds.clear();
+  SoundFile[] backgroundSoundsArray = backgroundSounds.toArray(new SoundFile[backgroundSounds.size()]);
 
   // Select and play multiple background sounds
-  for (SoundFile sound : backgroundSounds) {
-    sound.loop();
-    currentBackgroundSounds.add(sound);
+  for (int i = 0; i < backgroundSoundsArray.length; i++) {
+    backgroundSoundsArray[i].loop();
+    currentBackgroundSounds.add(backgroundSoundsArray[i]);
+    
+    // Check if the corresponding waveform exists in the ArrayList
+    if (i < windWaveformsAL.size()) {
+      Waveform windWaveform = windWaveformsAL.get(i);
+      windWaveform.input(backgroundSoundsArray[i]);
+    } else {
+      // Create a new waveform if it doesn't exist
+      Waveform windWaveform = new Waveform(this, samples);
+      windWaveform.input(backgroundSoundsArray[i]);
+      windWaveformsAL.add(windWaveform);
+    }
   }
 }
 
@@ -192,7 +210,7 @@ void playRandomSample(ArrayList<SoundFile> sampleList, float amp) {
       playingBirdSounds.add(randomSample);
 
 
-      waveform.input(birdSamplesArray[randomIndex]);
+      birdWaveform.input(birdSamplesArray[randomIndex]);
 
       // Set the last played sample to the current sample
       lastSamplePlayed = randomSample;
@@ -212,7 +230,7 @@ public void draw() {
   birdGain += 0.000001f;
   bgGain += 0.000001f;
 
-  float chanceOfBirdNoise = 0.003f;
+  float chanceOfBirdNoise = 0.03f;
   float randInt = random(0, 1);
   if (randInt <= chanceOfBirdNoise)
   {
@@ -230,7 +248,7 @@ public void draw() {
   // Set the output gain for all sounds
   s.volume(masterGain/100);
 
-  waveform.analyze();
+  birdWaveform.analyze();
 
   stroke(100, 140, 100);
   strokeWeight(2);
@@ -241,8 +259,38 @@ public void draw() {
   {
     vertex(
       map(i, 0, samples, 0, width),
-      map(waveform.data[i], -1, 1, 0, height)
+      map(birdWaveform.data[i], -1, 1, 0, height)
       );
   }
   endShape();
+
+
+
+  // wind waveforms
+  // Currently Jump around volume wise.
+/*
+  float[] dataList;
+  dataList = new float[birdWaveform.data.length];
+
+  for (Waveform waveform : windWaveformsAL) {
+    waveform.analyze();
+    for (int i = 0; i<dataList.length; i++) {
+      dataList[i] += waveform.data[i];
+    }
+  }
+
+  stroke(100, 140, 140);
+  strokeWeight(2);
+  noFill();
+
+  beginShape();
+  for (int i = 0; i < samples; i++)
+  {
+    vertex(
+      map(i, 0, samples, 0, width),
+      map(dataList[i], -1, 1, 0, height)
+      );
+  }
+  endShape();
+  */
 }
