@@ -58,7 +58,7 @@ public void setup() {
 
 
   birdWaveform = new processing.sound.Waveform(this, samples);
-  
+
   for (int i = 0; i < windSamples.size(); i++) {
     Waveform windWaveform = new Waveform(this, samples);
     windWaveformsAL.add(windWaveform);
@@ -178,7 +178,7 @@ void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
   for (int i = 0; i < backgroundSoundsArray.length; i++) {
     backgroundSoundsArray[i].loop();
     currentBackgroundSounds.add(backgroundSoundsArray[i]);
-    
+
     // Check if the corresponding waveform exists in the ArrayList
     if (i < windWaveformsAL.size()) {
       Waveform windWaveform = windWaveformsAL.get(i);
@@ -264,33 +264,4 @@ public void draw() {
   }
   endShape();
 
-
-
-  // wind waveforms
-  // Currently Jump around volume wise.
-/*
-  float[] dataList;
-  dataList = new float[birdWaveform.data.length];
-
-  for (Waveform waveform : windWaveformsAL) {
-    waveform.analyze();
-    for (int i = 0; i<dataList.length; i++) {
-      dataList[i] += waveform.data[i];
-    }
-  }
-
-  stroke(100, 140, 140);
-  strokeWeight(2);
-  noFill();
-
-  beginShape();
-  for (int i = 0; i < samples; i++)
-  {
-    vertex(
-      map(i, 0, samples, 0, width),
-      map(dataList[i], -1, 1, 0, height)
-      );
-  }
-  endShape();
-  */
 }
