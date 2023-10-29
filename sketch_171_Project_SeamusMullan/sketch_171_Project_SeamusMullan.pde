@@ -1,4 +1,4 @@
-//<>// //<>// //<>// //<>//
+//<>// //<>// //<>// //<>// //<>//
 /*
  *
  *    ... . .- -- ..- ...            -- ..- .-.. .-.. .- -.
@@ -17,6 +17,10 @@ import java.io.File;
 // Create UI and Audio I/O + parameters
 LazyGui gui;
 Sound s;
+
+boolean isPlaying = true; // To check if the audio is currently playing
+float fadeSpeed = 1; // Speed at which the volume will fade
+boolean fadingOut = false; // To check if we are currently fading out
 
 // I'm using an arraylist so more samples can be added in the future (it makes the whole program customizable too!
 ArrayList<SoundFile> windSamples = new ArrayList<SoundFile>();
@@ -37,7 +41,6 @@ float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to s
 
 // Vislualizer Stuff
 Waveform birdWaveform;
-ArrayList<Waveform> windWaveformsAL = new ArrayList<Waveform>();
 
 
 int samples = 2048*64;
@@ -55,14 +58,10 @@ public void setup() {
   // Specific Gains for each section of ambience
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
+  isPlaying = gui.toggle("Muted", false);
 
 
   birdWaveform = new processing.sound.Waveform(this, samples);
-
-  for (int i = 0; i < windSamples.size(); i++) {
-    Waveform windWaveform = new Waveform(this, samples);
-    windWaveformsAL.add(windWaveform);
-  }
 
 
 
@@ -71,13 +70,36 @@ public void setup() {
 }
 
 
+void togglePlayPause() {
+  if (!isPlaying) {
+    // Fade out
+    fadingOut = true;
+  } else {
+    // Fade in
+    fadingOut = false;
+  }
+  isPlaying = !isPlaying;
+}
+
 void updateParameters() {
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
+  isPlaying = gui.toggle("Muted", false);
 }
 
-
+void applyFade() {
+  if (fadingOut) {
+    if (masterGain > 0) {
+      masterGain -= fadeSpeed;
+    }
+  } else {
+    if (masterGain < 100) {
+      masterGain += fadeSpeed;
+    }
+  }
+  s.volume(masterGain / 100);
+}
 
 /*
  
@@ -179,21 +201,9 @@ void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
     backgroundSoundsArray[i].loop();
     currentBackgroundSounds.add(backgroundSoundsArray[i]);
 
-    // Check if the corresponding waveform exists in the ArrayList
-    if (i < windWaveformsAL.size()) {
-      Waveform windWaveform = windWaveformsAL.get(i);
-      windWaveform.input(backgroundSoundsArray[i]);
-    } else {
-      // Create a new waveform if it doesn't exist
-      Waveform windWaveform = new Waveform(this, samples);
-      windWaveform.input(backgroundSoundsArray[i]);
-      windWaveformsAL.add(windWaveform);
-    }
+    
   }
 }
-
-
-
 
 // mostly used for bird samples, rest are bg elements
 void playRandomSample(ArrayList<SoundFile> sampleList, float amp) {
@@ -246,7 +256,13 @@ public void draw() {
   }
 
   // Set the output gain for all sounds
-  s.volume(masterGain/100);
+  // s.volume(masterGain/100);
+
+  if (!isPlaying) { // check if muted
+    applyFade();
+  } else {
+    s.volume(0); // Completely mute the sound if not playing
+  }
 
   birdWaveform.analyze();
 
@@ -264,4 +280,19 @@ public void draw() {
   }
   endShape();
 
+
+
+  stroke(100, 140, 100, 127);
+  strokeWeight(2);
+  noFill();
+
+  beginShape();
+  for (int i = 0; i < samples; i++)
+  {
+    vertex(
+      map(i, 0, samples, 0, width),
+      map(birdWaveform.data[i], -1, 1, 0, height)
+      );
+  }
+  endShape();
 }
