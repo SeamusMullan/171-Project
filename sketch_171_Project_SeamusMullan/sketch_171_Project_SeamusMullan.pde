@@ -21,8 +21,6 @@ LazyGui gui;
 Sound s;
 
 boolean isPlaying = true; // To check if the audio is currently playing
-float fadeSpeed = 0.001; // Speed at which the volume will fade
-boolean fadingOut = false; // To check if we are currently fading out
 
 // I'm using an arraylist so more samples can by the user, the ArrayList then gets converted to a normal array for iterating and playing the sounds
 ArrayList<SoundFile> windSamples = new ArrayList<SoundFile>();
@@ -39,12 +37,13 @@ float masterGain;
 float birdGain, bgGain;
 float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to scale the reverb with one parameter
 Waveform birdWaveform; // Waveform object to visualise the bird sounds
+Waveform rainWaveform; // same for rain
 
-int samples =  65536; // This sample count ran efficiently on my laptop, its 2^16 samples
+int samples = 65536; // This sample count ran efficiently on my laptop, its 2^16 samples
 
 public void setup() {
   // setup window and bg colour
-  size(500, 400, P2D);
+  size(500, 600, P2D);
   background(140, 180, 140);
 
   // Initialize UI Controls and Parameters
@@ -58,24 +57,19 @@ public void setup() {
   
   
   // Check if muted
-  isPlaying = gui.toggle("Muted", false);
+  isPlaying = gui.toggle("Mute", false);
   // Instantiate the waveform object
   birdWaveform = new processing.sound.Waveform(this, samples);
+  rainWaveform = new processing.sound.Waveform(this, samples);
   // search local dirs for samples to play, add to arraylists
   fetchSamples();
   // play the background sounds
   playBackgroundSound(backgroundSounds);
+  
 }
 
 
 void togglePlayPause() {
-  if (!isPlaying) {
-    // Fade out
-    fadingOut = true;
-  } else {
-    // Fade in
-    fadingOut = false;
-  }
   isPlaying = !isPlaying;
 }
 
@@ -83,20 +77,7 @@ void updateParameters() {
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
-  isPlaying = gui.toggle("Muted", false);
-}
-
-void applyFade() {
-  if (fadingOut) {
-    if (masterGain > 0) {
-      masterGain -= fadeSpeed;
-    }
-  } else {
-    if (masterGain < 100) {
-      masterGain += fadeSpeed;
-    }
-  }
-  s.volume(masterGain / 100);
+  isPlaying = gui.toggle("Mute", false);
 }
 
 /*
@@ -204,11 +185,8 @@ void playRandomBirdSample(ArrayList<SoundFile> sampleList, float amp) {
   }
 }
 
-
-// 4D 61 64 65 42 79 53 65 61 6D 75 73 4D 75 6C 6C 61 6E (ASCII Hexadecimal)
-
-
 public void draw() {
+  // 4D 61 64 65 42 79 53 65 61 6D 75 73 4D 75 6C 6C 61 6E (ASCII Hexadecimal Tag)
   // Update all the parameters relevant to sliders
   updateParameters();
   background(140, 180, 140);
@@ -234,7 +212,7 @@ public void draw() {
   }
 
   if (!isPlaying) { // check if muted
-    applyFade();
+    s.volume(masterGain/100);
   } else {
     s.volume(0); // Completely mute the sound if not playing
   }
@@ -258,6 +236,5 @@ public void draw() {
   }
   endShape();
 
-
-  // END //
 }
+  // END //
