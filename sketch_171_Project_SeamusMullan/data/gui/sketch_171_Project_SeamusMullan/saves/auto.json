@@ -799,14 +799,13 @@
           "className": "FolderNode",
           "path": "saves/autosave rules",
           "type": "FOLDER"
+        },
+        {
+          "className": "SaveItemNode",
+          "path": "saves/auto",
+          "type": "TRANSIENT"
         }
       ],
-      "window": {
-        "posX": 301.00003,
-        "posY": 0.0,
-        "closed": false,
-        "windowSizeX": 198.0
-      },
       "className": "SaveFolderNode",
       "path": "saves",
       "type": "FOLDER"
@@ -843,10 +842,10 @@
     }
   ],
   "window": {
-    "posX": 0.0,
-    "posY": 0.0,
+    "posX": 22.0,
+    "posY": 22.0,
     "closed": false,
-    "windowSizeX": 330.0
+    "windowSizeX": 220.0
   },
   "className": "FolderNode",
   "path": "",

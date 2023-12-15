@@ -12,35 +12,45 @@
  */
 
 
+// Samples inside the data folder created by Seamus Mullan
+
+
 // Import libraries
-import processing.sound.*;
-import com.krab.lazy.*;
+
+//import processing.sound.*;
+import com.krab.lazy.*; // https://github.com/KrabCode/LazyGui
 import java.io.File;
+import ddf.minim.*;
+import ddf.minim.analysis.*;
 
 // Create UI and Audio I/O + parameters
 LazyGui gui;
-Sound s;
-
 boolean isPlaying = true; // To check if the audio is currently playing
 
 // list of known directories for samples, each folder gets searched later in the file
 String[] sDir = {"bird_samples", "wind_samples", "leaves_samples", "rain_samples"};
 
 // I'm using an arraylist so more samples can be added the user, the ArrayList gets converted to fixed size array for playing sounds
-ArrayList<SoundFile> windSamples = new ArrayList<SoundFile>();
-ArrayList<SoundFile> birdSamples = new ArrayList<SoundFile>();
-ArrayList<SoundFile> leavesSamples = new ArrayList<SoundFile>();
-ArrayList<SoundFile> rainSamples = new ArrayList<SoundFile>();
+ArrayList<AudioSample> windSamples = new ArrayList<AudioSample>();
+ArrayList<AudioSample> birdSamples = new ArrayList<AudioSample>();
+ArrayList<AudioSample> leavesSamples = new ArrayList<AudioSample>();
+ArrayList<AudioSample> rainSamples = new ArrayList<AudioSample>();
 
-ArrayList<SoundFile> currentBackgroundSounds = new ArrayList<SoundFile>();
-ArrayList<SoundFile> backgroundSounds = new ArrayList<SoundFile>();
-ArrayList<SoundFile> playingBirdSounds = new ArrayList<SoundFile>();
+ArrayList<AudioPlayer> playingBackgroundSounds = new ArrayList<AudioPlayer>();
+ArrayList<AudioPlayer> backgroundSounds = new ArrayList<AudioPlayer>();
+ArrayList<AudioSample> playingBirdSounds = new ArrayList<AudioSample>();
 
 // Audio parameters
 float masterGain;
 float birdGain, bgGain;
-Waveform birdWaveform; // Waveform object to visualise the bird sounds
-int waveformSampleRate = 65536; // decently high quality, ran efficiently on my laptop (M2 Macbook Air 2022 13")
+
+//Waveform birdWaveform; // Waveform object to visualise the bird sounds
+
+AudioOutput out;
+FFT fft;
+Minim minim;
+
+int waveformSampleRate = 65536; // decently high detail, ran efficiently on my laptop (M2 Macbook Air 2022 13")
 
 
 /*
@@ -56,7 +66,7 @@ public void setup() {
 
   // Initialize UI Controls and Parameters
   gui = new LazyGui(this);
-  s = new Sound(this);
+
 
   // Gain parameters for each category of sound (Name, Default, Min, Max)
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
@@ -64,7 +74,9 @@ public void setup() {
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
   isPlaying = gui.toggle("Mute", false);
 
-  birdWaveform = new processing.sound.Waveform(this, waveformSampleRate);
+  minim = new Minim(this);
+  out = minim.getLineOut(); // used to display output audio
+  fft = new FFT(out.bufferSize(), out.sampleRate());
 
   // search local dirs for samples (uses global sDirs array)
   fetchSamples();
@@ -82,11 +94,15 @@ void updateParameters() {
   isPlaying = gui.toggle("Mute", false);
 }
 
+
+
 /*
  ################################################
  Sample Fetching methods
  ################################################
  */
+
+
 
 // This function gets the files in each dedicated sample folder so users can add their own samples!
 File[] sampleCounter(int dirInt) {
@@ -108,27 +124,36 @@ File[] sampleCounter(int dirInt) {
   }
 }
 
+
 // This gets all the samples from each folder and adds them to their corresponding arraylist
 void fetchSamples() {
+  
+  // NON LOOPING FILES //
   File[][] allFiles = new File[sDir.length][];
 
   for (int i = 0; i < sDir.length; i++) {
-    allFiles[i] = sampleCounter(i); // Directly assign the output from sampleCounter to the array
+    allFiles[i] = sampleCounter(i);
   }
 
-  ArrayList[] allSamples = {birdSamples, windSamples, leavesSamples, rainSamples};
+  ArrayList[] allSamples = {birdSamples, windSamples, leavesSamples};
+  ArrayList rainSamples = new ArrayList<AudioPlayer>();
 
-  for (int i = 0; i < allFiles.length; i++) {
+  for (int i = 0; i < allFiles.length-1; i++) {
     for (File file : allFiles[i]) {
-      allSamples[i].add(new SoundFile(this, file.toString()));
+      // convert file to AudioSample and add to the correct arraylist
+      allSamples[i].add(minim.loadSample(file.toString()));
     }
   }
 
+  // rain sounds always at end of this list
+  for (File file : allFiles[allFiles.length - 1]) {
+    rainSamples.add(minim.loadFile(file.toString()));
+  }
+
   // rain sounds are the only sounds that get looped during the runtime of the app
+  // this means we can add them to the background sounds arraylist and make it loop later
   backgroundSounds.addAll(rainSamples);
 }
-
-
 
 
 
@@ -138,47 +163,44 @@ void fetchSamples() {
  ################################################
  */
 
-SoundFile lastSamplePlayed;
+AudioSample lastSamplePlayed;
 
-void playOneShot(SoundFile sample) {
+void playOneShot(AudioSample sample) {
   if (sample != null) {
-    sample.play();
+    sample.trigger();
+  }
+}
+
+void playLoopingSample(AudioPlayer sample) {
+  if (sample != null && !playingBackgroundSounds.contains(sample)) {
+    sample.cue(0);
+    sample.loop();
   }
 }
 
 
-// gets called in setup (leaves blowing in the wind is called psithurism by the way!)
-void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
-  
-  for (SoundFile sound : currentBackgroundSounds) {
-    sound.stop();
-  }
-  currentBackgroundSounds.clear();
 
-  SoundFile[] backgroundSoundsArray = backgroundSounds.toArray(new SoundFile[backgroundSounds.size()]);
-  
+void playBackgroundSound(ArrayList<AudioPlayer> backgroundSounds) {
+  AudioPlayer[] backgroundSoundsArray = backgroundSounds.toArray(new AudioPlayer[backgroundSounds.size()]);
+
   // Select and play all background sounds
   for (int i = 0; i < backgroundSoundsArray.length; i++) {
-    backgroundSoundsArray[i].loop();
-    currentBackgroundSounds.add(backgroundSoundsArray[i]);
+    playLoopingSample(backgroundSoundsArray[i]);
+    playingBackgroundSounds.add(backgroundSoundsArray[i]);
   }
 }
 
 
-
-void playRandomBirdSample(ArrayList<SoundFile> sampleList, float amp) {
+void playRandomBirdSample(ArrayList<AudioSample> sampleList, float amp) {
   if (sampleList.size() > 0) {
     // get a random sample in the birdSamples array
     int randomIndex = int(random(sampleList.size()));
-    SoundFile randomSample = sampleList.get(randomIndex);
-    SoundFile[] birdSamplesArray = birdSamples.toArray(new SoundFile[birdSamples.size()]);
+    AudioSample randomSample = sampleList.get(randomIndex);
 
     if (randomSample != lastSamplePlayed) {
-      randomSample.play(1, amp);
+      randomSample.setGain(amp);
+      randomSample.trigger();
       playingBirdSounds.add(randomSample);
-
-      // Set the waveform to the current sample (only one sample displayed at a time)
-      birdWaveform.input(birdSamplesArray[randomIndex]);
       lastSamplePlayed = randomSample;
     }
   }
@@ -188,44 +210,63 @@ void playRandomBirdSample(ArrayList<SoundFile> sampleList, float amp) {
 
 
 public void draw() {
-  // 4D 61 64 65 42 79 53 65 61 6D 75 73 4D 75 6C 6C 61 6E (ASCII Hexadecimal Tag)
-
   updateParameters();
   background(140, 180, 140);
 
-  float chanceOfBirdNoise = 0.03f; // 3% chance every draw call (Stops too much overlap)
+  float chanceOfBirdNoise = 0.025f; // 3% chance every draw call (Stops samples overlapping)
   float randInt = random(0, 1);
   if (randInt <= chanceOfBirdNoise)
   {
     playRandomBirdSample(birdSamples, birdGain/100);
   }
 
-  for (SoundFile birdSound : playingBirdSounds) {
-    birdSound.amp(birdGain / 100);
+  // convert gain values from 0 -> 100 % to -inf -> 0 dB
+  float masterGainDB = map(masterGain, 0, 100, -100, 0);
+  float birdGainDB = map(birdGain, 0, 100, -100, 0);
+  float bgGainDB = map(bgGain, 0, 100, -100, 0);
+  
+
+
+  // set volume for samples
+  for (AudioSample birdSound : playingBirdSounds) {
+    birdSound.setGain(birdGain / 100);
   }
-  for (SoundFile sound : currentBackgroundSounds) {
-    sound.amp(bgGain / 100);
+  for (AudioPlayer sound : playingBackgroundSounds) {
+    sound.setGain(bgGain / 100);
   }
 
+  // set gain of whole application
   if (!isPlaying) {
-    s.volume(masterGain/100);
+    out.setGain(masterGain/100);
   } else {
-    s.volume(0);
+    out.setGain(0);
   }
-  birdWaveform.analyze();
+
+
+
+  //birdWaveform.analyze();
+
+
+  fft.forward(out.mix);
 
 
   // Draw the waveform to the screen
   stroke(100, 140, 100); // darker green
   strokeWeight(1);
   noFill();
+
   beginShape();
-  for (int i = 0; i < waveformSampleRate; i++)
+  for (int i = 0; i < fft.specSize(); i++)
   {
-    vertex(
-      map(i, 0, waveformSampleRate, 0, width),
-      map(birdWaveform.data[i], -1, 1, 0, height)
-      );
+    // create vertex for each point in the fft
+    vertex(map(i, 0, fft.specSize(), 0, width), map(fft.getBand(i), 0, 1, height, 0));
+    
+  }
+
+   for(int i = 0; i < fft.specSize(); i++)
+  {
+    // draw the line for frequency band i, scaling it up a bit so we can see it
+    line( i, height, i, height - fft.getBand(i)*8 );
   }
   endShape();
 }
