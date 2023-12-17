@@ -811,11 +811,19 @@
       "type": "FOLDER"
     },
     {
-      "valueFloat": 50.0,
+      "valueFloat": 29.0,
       "currentPrecisionIndex": 4,
       "valueFloatPrecision": 1.0,
       "className": "SliderNode",
-      "path": "Master_gain",
+      "path": "bird_samples_gain",
+      "type": "VALUE"
+    },
+    {
+      "valueFloat": 25.0,
+      "currentPrecisionIndex": 4,
+      "valueFloatPrecision": 1.0,
+      "className": "SliderNode",
+      "path": "test_gain",
       "type": "VALUE"
     },
     {
@@ -823,30 +831,17 @@
       "currentPrecisionIndex": 4,
       "valueFloatPrecision": 1.0,
       "className": "SliderNode",
-      "path": "Bird_gain",
+      "path": "rain_samples_gain",
       "type": "VALUE"
     },
     {
-      "valueFloat": 50.0,
-      "currentPrecisionIndex": 4,
-      "valueFloatPrecision": 1.0,
-      "className": "SliderNode",
-      "path": "Wind_Rain_gain",
-      "type": "VALUE"
-    },
-    {
-      "valueBoolean": false,
+      "valueBoolean": true,
       "className": "ToggleNode",
       "path": "Mute",
       "type": "VALUE"
     }
   ],
-  "window": {
-    "posX": 22.0,
-    "posY": 22.0,
-    "closed": false,
-    "windowSizeX": 220.0
-  },
+  "window": {},
   "className": "FolderNode",
   "path": "",
   "type": "FOLDER"

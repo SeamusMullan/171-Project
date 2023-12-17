@@ -68,7 +68,7 @@ public void setup() {
   gui = new LazyGui(this);
 
 
-  // Gain parameters for each category of sound (Name, Default, Min, Max)
+  // Gain parameters for each category of sound
   masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f);
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
