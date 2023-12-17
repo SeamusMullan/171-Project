@@ -41,6 +41,23 @@ HashMap<String, Object> sampleVolumes = new HashMap<String, Object>(); // Object
 ArrayList<File[]> oneShotSamples = new ArrayList<File[]>(); // contains all samples to be randomly played during runtime
 ArrayList<File[]> loopingSamples = new ArrayList<File[]>(); // contains all samples to be looped from beginning
 
+ArrayList<File> oneShotSamples1 = new ArrayList<File>(); // contains all samples to be randomly played during runtime
+ArrayList<File> loopingSamples1 = new ArrayList<File>(); // contains all samples to be looped from beginning
+
+
+// manage oneshot playing to stop overlap / spam
+int lastTime = 0;
+int delta = 0;
+int oneShotDelay = 1; // seconds
+
+boolean canPlaySample() {
+  delta = millis() - lastTime;
+  boolean canPlay = (delta >= oneShotDelay * 1000); // Convert seconds to milliseconds
+  if (canPlay) {
+    lastTime = millis();
+  } // updates timer when successful
+  return canPlay;
+}
 
 /*
  ################################################
@@ -55,32 +72,32 @@ public void setup() {
 
   /*
     For each sound subfolder found, make a parameter that controls the volume of all the files in that directory
-    Structure is as follows:
-      - data
-        - bird
-          - bird1.mp3
-          - bird2.mp3
-          - ...
-        - wind_rain
-          - loop_wind1.mp3      -- this file *will* loop --
-          - rain1.mp3           -- this file wont loop --
-          - ...
-        - *
-          - *_1.mp3
-          - *_2.mp3
-          - ...
-        - ...
-
-      Parameters would be:
-        - bird_gain
-        - wind_rain_gain
-        - *_gain
-        - ...
-
-      NOTE: the gui folder is ignored (manages LazyGui stuff)
-
-    This way makes it possible for the user to add custom folders and sounds without having to change the code
-  */
+   Structure is as follows:
+   - data
+   - bird
+   - bird1.mp3
+   - bird2.mp3
+   - ...
+   - wind_rain
+   - loop_wind1.mp3      -- this file *will* loop --
+   - rain1.mp3           -- this file wont loop --
+   - ...
+   - *
+   - *_1.mp3
+   - *_2.mp3
+   - ...
+   - ...
+   
+   Parameters would be:
+   - bird_gain
+   - wind_rain_gain
+   - *_gain
+   - ...
+   
+   NOTE: the gui folder is ignored (manages LazyGui stuff)
+   
+   This way makes it possible for the user to add custom folders and sounds without having to change the code
+   */
 
   minim = new Minim(this);
   out = minim.getLineOut();
@@ -98,7 +115,7 @@ public void setup() {
 }
 
 // WORKING
-void findSamples(Minim minim){
+void findSamples(Minim minim) {
   // find all subdirs in the data folder (except the gui folder)
   // create array for all samples in each subfolder, append to relevant arraylist
   File[] subdirs = new File(sketchPath("data")).listFiles(File::isDirectory);
@@ -112,39 +129,39 @@ void findSamples(Minim minim){
         if (sample.getName().endsWith(".mp3") || sample.getName().endsWith(".wav")) {
           // assign to correct arraylist and make AudioPlayer instance
           if (sample.getName().contains("loop")) {
-            loopingSamples.add(samples);
-            loopingPlayers.put(sample.getName(), minim.loadFile(sample.getAbsolutePath()));
-            // println("looping sample: " + sample.getName()); // debug
+            loopingSamples1.add(sample);
+            AudioPlayer player = minim.loadFile(sample.getAbsolutePath());
+            loopingPlayers.put(sample.getName(), player);
+            println(loopingPlayers.get(sample.getName())); // debug
           } else {
-            oneShotSamples.add(samples);
+            oneShotSamples1.add(sample);
             oneShotPlayers.put(sample.getName(), minim.loadFile(sample.getAbsolutePath()));
+            // loopingPlayers.get(sample.getName()).pause(); //<>//
             // println("one shot sample: " + sample.getName()); // debug
           }
-        }
+        } //<>// //<>// //<>// //<>//
       }
     }
   }
 
-  // print out sizes of the arraylists
+  // print out sizes of the arraylists //<>//
   println("Found " + oneShotSamples.size() + " one shot samples");
   println("Found " + loopingSamples.size() + " looping samples");
-}
+} //<>// //<>// //<>// //<>// //<>//
 
-
-void createSliders(LazyGui gui){
+// WORKING //<>//
+void createSliders(LazyGui gui) {
   // create a slider for each subfolder
   for (File[] samples : oneShotSamples) {
-    String folderName = samples[0].getParentFile().getName();
+    String folderName = samples[0].getParentFile().getName(); //<>//
     // gui.slider(Name, Default, Min, Max);
     sampleVolumes.put((folderName + "_gain"), gui.slider(folderName + "_gain", 50.0f, 0.0f, 100.0f));
   }
   for (File[] samples : loopingSamples) {
     String folderName = samples[0].getParentFile().getName();
-    sampleVolumes.put((folderName + "_gain"),gui.slider(folderName + "_gain", 50.0f, 0.0f, 100.0f));
+    sampleVolumes.put((folderName + "_gain"), gui.slider(folderName + "_gain", 50.0f, 0.0f, 100.0f));
   }
 }
-
-
 
 /*
  ################################################
@@ -152,10 +169,11 @@ void createSliders(LazyGui gui){
  ################################################
  */
 
-public void draw(){
+public void draw() {
   background(140, 180, 140); // a nice light green
-  updateParameters();
+  
   if (isPlaying) {
+    updateParameters();
     playRandomOneShot();
   } else {
     // pause since minim.AudioPlayer resumes at the same point (like a cue)
@@ -165,44 +183,71 @@ public void draw(){
     for (AudioPlayer player : loopingPlayers.values()) {
       player.pause();
     }
+    
+    isPlaying = gui.toggle("Mute");
   }
 
+  // move the cue to 0 when finished playing and keep there until it is
+  for (AudioPlayer player : oneShotPlayers.values()) {
+    if (!player.isPlaying() || player.position() == player.length()) {
+      player.cue(0);
+    }
+  }
 }
 
-void updateParameters(){
+// TODO: make this work
+void updateParameters() {
   // change volume of each sample from slider value
-  
-  println("Updating Samples");
-  println(sampleVolumes.keySet()); // lists all the possible folders for samples
-  println(sampleVolumes.values()); // lists all the slider objects
 
-  for (String folderName : sampleVolumes.keySet()) {
-    // sets volume = to slider object (which is how LazyGui works for some reason)
-    float sampleGain = (float) sampleVolumes.get(folderName);
+  // println("Updating Samples"); // debug
+   //println(sampleVolumes.keySet()); // lists all the possible folders for samples
+  // println(sampleVolumes.values()); // lists all the slider objects aka the volumes
+  //println("****"); // debug
+  //println(oneShotPlayers.keySet() + "\n" + oneShotPlayers.values());
 
-    // check if sample is a one shot or loops and update gain
-    sampleGain = map(sampleGain, 0.0f, 100.0f, -40.0f, 0.0f); // convert to dB (for minim)
+  for (String folder : sampleVolumes.keySet()) {
 
-    if (oneShotPlayers.containsKey(folderName)) {
-      // gets AudioPlayer for the folder and sets gain
-      oneShotPlayers.get(folderName).setGain(sampleGain);
-      println(sampleGain + " gain for sample: " + folderName);
+    if (oneShotPlayers.get(folder) != null) {
+      for (AudioPlayer filePlayer : oneShotPlayers.values()) {
+        println(filePlayer); // debug
+        // sets volume = to slider object (which is how LazyGui works for some reason)
+        float sampleGain = (float) sampleVolumes.get(folder);
 
-    } else if (loopingPlayers.containsKey(folderName)) {
-      loopingPlayers.get(folderName).setGain(sampleGain);
-      println(sampleGain + " gain for sample: " + folderName);
-    } else {
-      println("No samples found for folder: " + folderName);
+        // check if sample is a one shot or loops and update gain
+        sampleGain = map(sampleGain, 0.0f, 100.0f, -40.0f, 0.0f); // convert to dB (for minim)
+        filePlayer.setGain(sampleGain);
       }
-  }
+    }
 
-  isPlaying = gui.toggle("Mute");
+    if (loopingPlayers.get(folder) != null) {
+      for (AudioPlayer filePlayer : loopingPlayers.values()) {
+        println(filePlayer); // debug
+        // sets volume = to slider object (which is how LazyGui works for some reason)
+        float sampleGain = (float) sampleVolumes.get(folder);
+
+        // check if sample is a one shot or loops and update gain
+        sampleGain = map(sampleGain, 0.0f, 100.0f, -40.0f, 0.0f); // convert to dB (for minim)
+        filePlayer.setGain(sampleGain);
+      }
+    }
+  }
+  
 }
 
+
+// TODO: stop spamming and samples overlapping
 void playRandomOneShot() {
-  float chance = 0.025; // 2.5% chance of playing a sample each frame
-  if (random(0, 1) < chance) {
+  float chance = 2.5; // 2.5% chance of playing a sample each frame
+  if ((random(0, 100) < chance) && canPlaySample()) {
+    println("Playing random sample"); // debug
     try {
+      
+      for (File a : oneShotSamples1){println(a.getName());}
+      println(oneShotPlayers.keySet() + "\n" + oneShotPlayers.values());
+      
+      File[] samples1 = null;
+      samples1 = oneShotSamples1.toArray(File[oneShotSamples1.size()]);
+      
       for (File[] samples : oneShotSamples) {
         int randomIndex = (int) random(samples.length);
         AudioPlayer player = oneShotPlayers.get(samples[randomIndex].getName());
@@ -210,33 +255,37 @@ void playRandomOneShot() {
           player.play();
         }
       }
-    } catch (Exception e) {
+    }
+    catch (Exception e) {
       // Handle null pointer exceptions and whatever else happens here
       // not fully sure why but if it works ¯\_(>.<)_/¯
-      
+
       println("exception occurred: " + e.getMessage());
     }
   }
 }
 
-void playLoopingSamples(){
+
+// WORKING (i think)
+void playLoopingSamples() {
   try {
     for (File[] samples : loopingSamples) {
       // play all samples in the subfolder at once
       // loop infinitely (until the user mutes or quits the program)
-      String name = new String();
+      //String name = new String();
       for (File sample : samples) {
         AudioPlayer player = loopingPlayers.get(sample.getName());
         if (player != null) {
-          //player.loop();
+          player.loop();
         }
       }
     }
-  } catch (Exception e) {\
+  }
+  catch (Exception e) {
     // same in oneshot function
     println("exception occurred: " + e.getMessage());
   }
 
   // play first sample for testing
-  loopingPlayers.get(loopingSamples.get(0)[0].getName()).loop();
+  // loopingPlayers.get(loopingSamples.get(0)[0].getName()).loop(); // debug
 }
