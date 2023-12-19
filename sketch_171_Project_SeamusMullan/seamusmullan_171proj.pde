@@ -41,10 +41,6 @@ HashMap<String, Object> sampleVolumes = new HashMap<String, Object>(); // Object
 ArrayList<File[]> oneShotSamples = new ArrayList<File[]>(); // contains all samples to be randomly played during runtime
 ArrayList<File[]> loopingSamples = new ArrayList<File[]>(); // contains all samples to be looped from beginning
 
-ArrayList<File> oneShotSamples1 = new ArrayList<File>(); // contains all samples to be randomly played during runtime
-ArrayList<File> loopingSamples1 = new ArrayList<File>(); // contains all samples to be looped from beginning
-
-
 // manage oneshot playing to stop overlap / spam
 int lastTime = 0;
 int delta = 0;
@@ -129,12 +125,12 @@ void findSamples(Minim minim) {
         if (sample.getName().endsWith(".mp3") || sample.getName().endsWith(".wav")) {
           // assign to correct arraylist and make AudioPlayer instance
           if (sample.getName().contains("loop")) {
-            loopingSamples1.add(sample);
+            loopingSamples.add(sample);
             AudioPlayer player = minim.loadFile(sample.getAbsolutePath());
             loopingPlayers.put(sample.getName(), player);
             println(loopingPlayers.get(sample.getName())); // debug
           } else {
-            oneShotSamples1.add(sample);
+            oneShotSamples.add(sample);
             oneShotPlayers.put(sample.getName(), minim.loadFile(sample.getAbsolutePath()));
             // loopingPlayers.get(sample.getName()).pause(); //<>//
             // println("one shot sample: " + sample.getName()); // debug
