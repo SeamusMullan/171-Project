@@ -8,8 +8,10 @@
  *
  *    Created in 2023 by Seamus Mullan.
  *    CS171 Year 1 Project
+ *    Maynooth University
  */
 
+// All samples in data folder made by Seamus Mullan (using Kontakt 7 and Ableton Live 11)
 
 // Import libraries
 import processing.sound.*;
@@ -24,12 +26,13 @@ boolean isPlaying = true; // To check if the audio is currently playing
 float fadeSpeed = 0.001; // Speed at which the volume will fade
 boolean fadingOut = false; // To check if we are currently fading out
 
-// I'm using an arraylist so more samples can by the user, the ArrayList then gets converted to a normal array for iterating and playing the sounds
+// using an arraylist so more samples can by the user, the ArrayList then gets converted to a normal array for iterating and playing the sounds
+// no leaves or wind samples are included in the project but you should be able to add samples as wav or mp3 files to your liking!
 ArrayList<SoundFile> windSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> birdSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> leavesSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> rainSamples = new ArrayList<SoundFile>();
-// 4D 61 64 65  42 79  53 65 61 6D 75 73  4D 75 6C 6C 61 6E (ASCII Hexadecimal)
+
 ArrayList<SoundFile> currentBackgroundSounds = new ArrayList<SoundFile>();
 ArrayList<SoundFile> backgroundSounds = new ArrayList<SoundFile>();
 ArrayList<SoundFile> playingBirdSounds = new ArrayList<SoundFile>();
@@ -37,45 +40,37 @@ ArrayList<SoundFile> playingBirdSounds = new ArrayList<SoundFile>();
 // Audio parameters
 float masterGain;
 float birdGain, bgGain;
-float lowPassFreq, reverbAmount; // Reverb amount modulates multiple values to scale the reverb with one parameter
-Waveform birdWaveform; // Waveform object to visualise the bird sounds
 
-int samples =  65536; // This sample count ran efficiently on my laptop, its 2^16 samples
+// used for visualiser
+Waveform birdWaveform;
+
+int samples =  65536; // This sample count ran efficiently on my PC, performance may vary on other devices
 
 public void setup() {
-  // setup window and bg colour
   size(500, 400, P2D);
-  background(140, 180, 140);
+  background(140, 180, 140); // a nice pale green
 
   // Initialize UI Controls and Parameters
   gui = new LazyGui(this);
   s = new Sound(this);
 
-  masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f); // Gain from 0% -> 100% on the output, default 50%
-  // Gain parameters for each category of sound
+  masterGain = gui.slider("Master_gain", 50.0f, 0.0f, 100.0f); // (Name, Default Val, Min, Max)
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
+  isPlaying = gui.toggle("Muted", true);
 
-
-  // Check if muted
-  isPlaying = gui.toggle("Muted", false);
+  
+  // search local dirs for samples to play, add to arraylists, start background audio
+  fetchSamples();
+  playBackgroundSound(backgroundSounds);
+  println(); // makes reading debug messages easier
+  
   // Instantiate the waveform object
   birdWaveform = new processing.sound.Waveform(this, samples);
-  // search local dirs for samples to play, add to arraylists
-  fetchSamples();
-  // play the background sounds
-  playBackgroundSound(backgroundSounds);
+  birdWaveform.input(birdSamples.get(0)); // stops console spam
 }
 
-
 void togglePlayPause() {
-  if (!isPlaying) {
-    // Fade out
-    fadingOut = true;
-  } else {
-    // Fade in
-    fadingOut = false;
-  }
   isPlaying = !isPlaying;
 }
 
@@ -86,35 +81,16 @@ void updateParameters() {
   isPlaying = gui.toggle("Muted", false);
 }
 
-void applyFade() {
-  if (fadingOut) {
-    if (masterGain > 0) {
-      masterGain -= fadeSpeed;
-    }
-  } else {
-    if (masterGain < 100) {
-      masterGain += fadeSpeed;
-    }
-  }
-  s.volume(masterGain / 100);
-}
-
-/*
- 
- I'm well aware this system below isn't that optimised, but since it's only called once on startup, it's not a huge perfomance hit and doesn't affect the program in runtime whatsoever
- 
- */
-
 // This function gets the files in each dedicated sample folder so users can add their own samples!
 File[] sampleCounter(int dirInt) {
-  String[] sDir = {"bird_samples", "wind_samples", "leaves_samples", "rain_samples"}; // list of known sample folders relative to the app
+  String[] sDir = {"bird_samples", "wind_samples", "leaves_samples", "rain_samples"}; // list of known sample folders for the app
 
+  // counts files in each directory
+  // this is debug info to make sure the files are being found.
   String directoryPath = dataPath(sDir[dirInt]);
   File directory = new File(directoryPath);
   File[] files = directory.listFiles();
 
-
-  // this is debug info to make sure the files are being found.
   if (files != null) {
     int numberOfFiles = files.length;
     println("Number of files in the directory '" + sDir[dirInt] + "': " + numberOfFiles);
@@ -135,6 +111,8 @@ void fetchSamples() {
     sampleCounter(3)  // rainFiles
   };
 
+
+  // final array of arraylists (yep its a mouthful)
   ArrayList[] allSamples = {birdSamples, windSamples, leavesSamples, rainSamples};
 
   for (int i = 0; i < allFiles.length; i++) {
@@ -166,20 +144,13 @@ void playOneShot(SoundFile sample) {
 
 // gets called on setup to start the wind, rain and leaves sounds (leaves blowing in the wind is called psithurism by the way!)
 void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
-  // Stop any previously playing background sounds
-  for (SoundFile sound : currentBackgroundSounds) {
-    sound.stop();
-  }
-  // Clear the list of currently playing background sounds
-  currentBackgroundSounds.clear();
 
-  // Convert the ArrayList to a normal array
+  // Convert the ArrayList to a normal array (more efficient than ArrayList)
   SoundFile[] backgroundSoundsArray = backgroundSounds.toArray(new SoundFile[backgroundSounds.size()]);
 
   // Select and play multiple background sounds
   for (int i = 0; i < backgroundSoundsArray.length; i++) {
     backgroundSoundsArray[i].loop();
-    // Add the sound to the list of currently playing background sounds
     currentBackgroundSounds.add(backgroundSoundsArray[i]);
   }
 }
@@ -187,7 +158,7 @@ void playBackgroundSound(ArrayList<SoundFile> backgroundSounds) {
 // plays random sample from an array of samples
 void playRandomBirdSample(ArrayList<SoundFile> sampleList, float amp) {
   if (sampleList.size() > 0) {
-    // Select a random sample from the list
+
     int randomIndex = int(random(sampleList.size()));
     SoundFile randomSample = sampleList.get(randomIndex);
     // Convert the ArrayList to a normal array
@@ -195,33 +166,25 @@ void playRandomBirdSample(ArrayList<SoundFile> sampleList, float amp) {
 
     // Check if the selected sample is different from the last one played
     if (randomSample != lastSamplePlayed) {
-      // Play the selected sample
       randomSample.play(1, amp);
-      // Add the sound to the list of currently playing bird sounds
       playingBirdSounds.add(randomSample);
 
-      // Set the waveform to the current sample (only one sample played at a time)
+      // Set the waveform to the current sample (only one sample displayed at a time)
       birdWaveform.input(birdSamplesArray[randomIndex]);
-      // Set the last played sample to the current sample
       lastSamplePlayed = randomSample;
     }
   }
 }
 
-
-// 4D 61 64 65 42 79 53 65 61 6D 75 73 4D 75 6C 6C 61 6E (ASCII Hexadecimal)
-
-
 public void draw() {
-  // Update all the parameters relevant to sliders
   updateParameters();
-  background(140, 180, 140);
+  background(140, 180, 140); // that same pale green in setup()
 
   // these stop the console being spammed with messages about inaudible sounds (since the volume "can't be = to 0")
   birdGain += 0.000001f;
   bgGain += 0.000001f;
 
-  // 3% chance a bird sample gets played every draw call
+  // 3% chance a bird sample gets played every draw call (still a lot but stops audio from getting too loud too fast)
   float chanceOfBirdNoise = 0.03f;
   float randInt = random(0, 1);
   if (randInt <= chanceOfBirdNoise)
@@ -237,10 +200,10 @@ public void draw() {
     sound.amp(bgGain / 100);
   }
 
-  if (!isPlaying) { // check if muted
-    applyFade();
+  if (isPlaying) { // check if muted
+    s.volume(masterGain / 100);
   } else {
-    s.volume(0); // Completely mute the sound if not playing
+    s.volume(0);
   }
 
   // analyze the waveform of the bird samples
@@ -261,7 +224,4 @@ public void draw() {
       );
   }
   endShape();
-
-
-  // END //
 }
