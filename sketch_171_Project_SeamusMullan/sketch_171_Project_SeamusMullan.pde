@@ -1,4 +1,4 @@
-/*
+/* //<>// //<>//
  *
  *    ... . .- -- ..- ...            -- ..- .-.. .-.. .- -.
  *     _____                          _____     _ _
@@ -29,7 +29,8 @@ ArrayList<SoundFile> windSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> birdSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> leavesSamples = new ArrayList<SoundFile>();
 ArrayList<SoundFile> rainSamples = new ArrayList<SoundFile>();
-// 4D 61 64 65  42 79  53 65 61 6D 75 73  4D 75 6C 6C 61 6E (ASCII Hexadecimal)
+\
+
 ArrayList<SoundFile> currentBackgroundSounds = new ArrayList<SoundFile>();
 ArrayList<SoundFile> backgroundSounds = new ArrayList<SoundFile>();
 ArrayList<SoundFile> playingBirdSounds = new ArrayList<SoundFile>();
@@ -55,8 +56,8 @@ public void setup() {
   // Gain parameters for each category of sound
   birdGain = gui.slider("Bird_gain", 50.0f, 0.0f, 100.0f);
   bgGain = gui.slider("Wind_Rain_gain", 50.0f, 0.0f, 100.0f);
-  
-  
+
+
   // Check if muted
   isPlaying = gui.toggle("Muted", false);
   // Instantiate the waveform object
@@ -103,7 +104,7 @@ void applyFade() {
  
  I'm well aware this system below isn't that optimised, but since it's only called once on startup, it's not a huge perfomance hit and doesn't affect the program in runtime whatsoever
  
-*/
+ */
 
 // This function gets the files in each dedicated sample folder so users can add their own samples!
 File[] sampleCounter(int dirInt) {
@@ -128,24 +129,28 @@ File[] sampleCounter(int dirInt) {
 
 // This gets all the samples from each folder and adds them to their corresponding arraylist (defined at start of program)
 void fetchSamples() {
-    File[][] allFiles = new File[][] {
-        sampleCounter(0), // birdFiles
-        sampleCounter(1), // windFiles
-        sampleCounter(2), // leavesFiles
-        sampleCounter(3)  // rainFiles
-    };
+  File[][] allFiles = new File[][] {
+    sampleCounter(0), // birdFiles
+    sampleCounter(1), // windFiles
+    sampleCounter(2), // leavesFiles
+    sampleCounter(3)  // rainFiles
+  };
 
-    ArrayList[] allSamples = {birdSamples, windSamples, leavesSamples, rainSamples};
+  ArrayList[] allSamples = {birdSamples, windSamples, leavesSamples, rainSamples};
 
-    for (int i = 0; i < allFiles.length; i++) {
-        for (File file : allFiles[i]) {
-            allSamples[i].add(new SoundFile(this, file.toString()));
+  for (int i = 0; i < allFiles.length; i++) {
+    if (allFiles[i] != null) {
+      for (File file : allFiles[i]) {
+        if (file != null) {
+          allSamples[i].add(new SoundFile(this, file.toString()));
         }
+      }
     }
+  }
 
 
-    // rain sounds are the only sounds that get looped during the runtime of the app
-    backgroundSounds.addAll(rainSamples);
+  // rain sounds are the only sounds that get looped during the runtime of the app
+  backgroundSounds.addAll(rainSamples);
 }
 
 
